@@ -1,0 +1,10 @@
+{
+  "name": "My Widget Collection",
+  "widgets": [
+    {
+      "name": "Test Chat",
+      "description": "A crappy, but functional chap application used for testing.",
+      "location": "/widgets/test-chat.js"
+    }
+  ]
+}

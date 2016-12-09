@@ -1,15 +1,8 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-const chat = require('./widgets/chat/main');
-function wsUrl(s) {
-  var l = window.location;
-  return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + ':8324' + l.pathname + s;
-}
+window.adhoc = window.adhoc || {};
+window.adhoc.widget = require('./src/main');
 
-var transport = new WebSocket(wsUrl('/'));
-
-chat( transport );
-
-},{"./widgets/chat/main":139}],2:[function(require,module,exports){
+},{"./src/main":139}],2:[function(require,module,exports){
 "use strict";
 function logToConsoleError(err) {
     var target = err.stack || err;
@@ -15481,7 +15474,7 @@ module.exports = function model( localIntent, adhoc ) {
 
   const state$ = xs
     .create()
-    .startWith( Immutable.Map({ state: [] }) )
+    .startWith( Immutable.Map({ messages: [] }) )
     .map( state => reducer$.fold(( acc, reducer ) => reducer( acc ), state ))
     .flatten();
 
@@ -15582,9 +15575,10 @@ module.exports = function view( state ) {
       input( '.input-name', {
         props: { type: 'text', placeholder: 'Pick a name...' }
       }),
-      button( '.set-name', {
-        props: { type: 'submit' }
-      })
+      button( '.set-name',
+        { props: { type: 'submit' }},
+        [ "Set Name" ]
+      )
     ])
   ]);
 }

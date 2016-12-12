@@ -15450,9 +15450,13 @@ module.exports = function intent( adhocSource ) {
   const getState$ = adhocSource
     .filter( msg => msg.type === 'getState' );
 
+  const setState$ = adhocSource
+    .filter( msg => msg.type === 'setState' );
+
   return {
     message$,
-    getState$
+    getState$,
+    setState$
   }
 }
 
@@ -15481,7 +15485,7 @@ module.exports = function model( localIntent, adhoc ) {
   const stateBroadcast$ = state$
     .map( state => adhoc.getState$.mapTo( state ))
     .flatten()
-    .map( state => ({ type: 'state', data: state }));
+    .map( state => ({ type: 'state', state: state.toObject() }));
 
   const messageBroadcast$ = localIntent.sendMessage$
     .map( msg => ({ type: 'message', data: msg }));
@@ -15552,10 +15556,15 @@ module.exports = function model( localActions, adhocActions ) {
     .map( name =>
       state => state.set( 'name', name ));
 
+  const setStateReducer$ = adhocActions.setState$
+    .map( newState =>
+      state => state.set( 'messages', newState.state ));
+
   const reducer$ = xs.merge(
     messagesReducer$,
     inputMessageReducer$,
-    setNameReducer$
+    setNameReducer$,
+    setStateReducer$
   );
 
   return xs

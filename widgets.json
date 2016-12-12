@@ -3,7 +3,7 @@
   "widgets": [
     {
       "name": "Test Chat",
-      "description": "A crappy, but functional chap application used for testing.",
+      "description": "A crappy, but functional chat application used for testing.",
       "location": "/widgets/test-chat.js"
     }
   ]

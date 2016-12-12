@@ -1,9 +1,10 @@
 var express = require('express');
 var app = express();
 var port = 3001;
+var webSocketPort = 8324;
 
 var WebSocketServer = require('ws').Server;
-var wss = new WebSocketServer({ port: 8324 });
+var wss = new WebSocketServer({ port: webSocketPort });
 
 var channels = {};
 

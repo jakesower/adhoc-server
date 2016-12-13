@@ -44,26 +44,14 @@ var createConnection = (function () {
   let connID = -1;
 
   return function( sock ) {
-    var queue = [];
     connID = connID + 1;
 
-    var connection = {
+    return {
       id: connID,
       send: function( msg ) {
         sock.send( JSON.stringify( msg ));
       }
     }
-    //   send: function( msg ) {
-    //     if( sock.readyState !== WebSocket.OPEN ) {
-    //       queue.push( msg );
-    //     }
-    //     else {
-    //       sock.send( msg );
-    //     }
-    //   }
-    // };
-
-    return connection;
   }
 }());
 
@@ -78,9 +66,6 @@ wss.on( 'connection', function connection( ws ){
 
   ws.on( 'message', function incoming( rawMessage ){
     var message = JSON.parse( rawMessage );
-
-    console.log( "message for " + channelID + ":" )
-    console.log( message );
 
     // special messages that the server must handle
     if( message.type === 'connect' ) {
@@ -139,12 +124,16 @@ app.get( '/widgets.json', function( req, res, next ) {
   res.sendFile(__dirname + '/widgets.json')
 });
 
-app.get( '/widgets/:widget(*)', function( req, res, next ){
+app.get( '/widgets/:widget(*)', function( req, res, next ) {
   var file = req.params.widget;
   var path = __dirname + '/widgets/' + file;
 
   res.sendFile( path );
 });
+
+app.get( '*', function( req, res, next ) {
+  res.sendFile( __dirname + '/websocket-client.html' );
+})
 
 app.listen( port );
 console.log('listening on port ' + port);

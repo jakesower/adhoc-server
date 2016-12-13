@@ -15558,7 +15558,7 @@ module.exports = function model( localActions, adhocActions ) {
 
   const setStateReducer$ = adhocActions.setState$
     .map( newState =>
-      state => state.set( 'messages', newState.state ));
+      state => state.set( 'messages', newState.state.messages ));
 
   const reducer$ = xs.merge(
     messagesReducer$,

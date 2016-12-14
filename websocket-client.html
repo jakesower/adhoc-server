@@ -41,7 +41,8 @@
   var config = {
     widgetCatalog: "http://localhost:3001/widgets.json",
     widgetPath: "http://localhost:3001",
-    wsPath: "ws://localhost:8324"
+    wsPath: "ws://localhost:8324",
+    domRoot: document.querySelector( 'main' )
   }
 
   window.adhoc = window.adhoc || {};
@@ -92,7 +93,11 @@
         });
 
         widgetList.addEventListener( 'click', function( event ) {
-          var wPath = event.currentTarget.querySelector('li').dataset.location;
+          var liNode = event.path.find( function( elt ) {
+            return elt.dataset.location;
+          });
+          var wPath = liNode.dataset.location;
+
           // FIXME
           loadWidget(
             wPath,
@@ -100,7 +105,7 @@
               var connection = createNewRoomConnection();
               connection.widgetPath = wPath;
               history.pushState({ room: connection.room }, "room", "?room=" + connection.room );
-              window.adhoc.widget( connection );
+              window.adhoc.widget( connection, config.domRoot );
             }
           );
         });
@@ -121,7 +126,7 @@
         loadWidget(
           message.widgetPath,
           function () {
-            window.adhoc.widget( connection );
+            window.adhoc.widget( connection, config.domRoot );
             connection.onmessage({ type: 'setState', state: message.state });
           }
         );
@@ -191,15 +196,19 @@
       messageQueue = [];
     }
 
-    sock.onmessage = function( rawMsg ) {
-      var msg = JSON.parse( rawMsg.data );
+    sock.onmessage = function( message ) {
+      var data = message.data;
+
+      // detect if it's a binary message
+      console.log( data )
+      var msg = JSON.parse( data );
       var hook = systemHooks.incoming[ msg.type ];
       console.log( 'received:' );
-      console.log( msg );
+      console.log( data );
 
       hook ?
-        hook( msg, connection ) :
-        connection.onmessage( msg );
+        hook( data, connection ) :
+        connection.onmessage( data );
     }
 
     return connection;

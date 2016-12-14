@@ -1,4 +1,6 @@
 var express = require('express');
+var fs = require('fs');
+
 var app = express();
 var port = 3001;
 var webSocketPort = 8324;
@@ -126,13 +128,13 @@ app.get( '/widgets.json', function( req, res, next ) {
 
 app.get( '/widgets/:widget(*)', function( req, res, next ) {
   var file = req.params.widget;
-  var path = __dirname + '/widgets/' + file;
+  var path = fs.realpathSync( __dirname + '/widgets/' + file );
 
   res.sendFile( path );
 });
 
 app.get( '*', function( req, res, next ) {
-  res.sendFile( __dirname + '/websocket-client.html' );
+  res.sendFile( fs.realpathSync( __dirname + '/websocket-client.html' ));
 })
 
 app.listen( port );

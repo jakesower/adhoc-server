@@ -8,11 +8,23 @@
 
   window.adhoc = window.adhoc || {};
 
+  /**
+    First pass at architecture:
+
+    - Connection acts as queue until init time
+    - Once signaling connection is established, create queue conns to peers
+    - Attempt connections with all peers
+    - Configure ICE, etc.
+    - Once an answer is received, request state if it's the first
+    - As true channels come in, drain queue channels
+    - Merge incoming widget messages
+    - Broadcast outgoing events to all in queue pool
+*/
+
+
   window.adhoc.createConnection = function( room ) {
     var uri = room ? ( config.wsPath + '/' + room ) : config.wsPath,
-        signalingChannel = new WebSocket( uri ),
-        RTCPeerConnection = RTCPeerConnection || webkitRTCPeerConnection,
-        connection;
+        signalingChannel = new WebSocket( uri );
 
     signalingChannel.onopen( function() {
       signalingChannel.send({ type: "ping" });

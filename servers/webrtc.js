@@ -21,14 +21,6 @@ module.exports = function({ port }) {
 
   var channels = {};
   var awaitingConnection = [];
-  var generateID = (function() {
-    let i = -1;
-
-    return function() {
-      i = i + 1;
-      return i;
-    }
-  }());
 
   function addConnectionToChannel( connection, channelID ) {
     if( !channels[ channelID ]) {
@@ -85,7 +77,7 @@ module.exports = function({ port }) {
     }
   }());
 
-  wss.on( 'connection', function connection( ws ){
+  wss.on( 'connection', function connection( ws ) {
     var urlParts = ws.upgradeReq.url.split( '/' );
     var channelID = urlParts[ urlParts.length - 1 ];
     var connection = createConnection( ws );
@@ -96,8 +88,9 @@ module.exports = function({ port }) {
     // store channel info for use in future messages
     var channel = channels[ channelID ];
 
-    ws.on( 'message', function incoming( rawMessage ){
-      var message = JSON.parse( rawMessage );
+    ws.on( 'message', function incoming( rawMessage ) {
+      var message = Object.assign( {},
+        JSON.parse( rawMessage ), { from: channel.id });
       broadcastTo( channel, message, message.to );
     });
 

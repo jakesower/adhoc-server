@@ -1,1 +1,1 @@
-/Users/jsower/dev/adhoc-photo-share/bundle/photo-share.js
+/home/jake/dev/adhoc-photo-share/bundle/photo-share.js

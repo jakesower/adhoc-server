@@ -7,12 +7,12 @@
   - A connects to server
   - Server tells A it is alone in room
   - B connects to server
-  - Server tells B to stand by
+  - Server tells B that A is the only one in the room
   - Server tells A that B has connected
-  - A sends offer to B via server
-  - B sends answer to A via server
-  - A sends ICE candidate to B via server
+  - B sends offer to A via server
+  - A sends answer to B via server
   - B sends ICE candidate to A via server
+  - A sends ICE candidate to B via server
 */
 
 module.exports = function({ port }) {
@@ -41,6 +41,8 @@ module.exports = function({ port }) {
       type: 'peerConnected',
       id: connection.id
     }, connection.id );
+
+    return channel;
   }
 
   function removeConnectionFromChannel( connection, channelID ) {
@@ -48,14 +50,14 @@ module.exports = function({ port }) {
       console.log( 'id ' + connection.id + ' disconnected from channel ' + channelID );
       channels[ channelID ] = channels[ channelID ].filter( c => c !== connection );
 
-      if( channels[ channelID ].length === 0 ){
-        delete channels[ channelID ];
-      }
-
-      broadcastAll( channel, {
+      broadcastAll( channels[ channelID ], {
         type: 'peerDisconnected',
         id: connection.id
       });
+
+      if( channels[ channelID ].length === 0 ){
+        delete channels[ channelID ];
+      }
     }
     else {
       console.log( 'id ' + connection.id + ' TRIED disconnecting from channel ' + channelID );
@@ -83,15 +85,23 @@ module.exports = function({ port }) {
     var connection = createConnection( ws );
 
     // will broadcast appropriate messages to channel
-    addConnectionToChannel( connection, channelID );
-
-    // store channel info for use in future messages
-    var channel = channels[ channelID ];
+    var channel = addConnectionToChannel( connection, channelID );
 
     ws.on( 'message', function incoming( rawMessage ) {
-      var message = Object.assign( {},
-        JSON.parse( rawMessage ), { from: channel.id });
-      broadcastTo( channel, message, message.to );
+      var channel = channels[ channelID ];
+
+      try {
+        var message = Object.assign( {},
+          JSON.parse( rawMessage ), { from: connection.id });
+        broadcastTo( channel, message, message.to );
+
+        console.log( message );
+      }
+      catch( err ) {
+        console.warn( "The message couldn't go through!" );
+        console.log( rawMessage );
+        console.log( err );
+      }
     });
 
     ws.on( 'close', function closing() {
@@ -99,9 +109,9 @@ module.exports = function({ port }) {
     });
   });
 
-  function broadcastAll( channel, msg, except = null ) {
+  function broadcastAll( channel, msg, exceptID = null ) {
     channel.forEach( function( sock ) {
-      if( sock.id !== except.id ) sock.send( msg );
+      if( sock.id !== exceptID ) sock.send( msg );
     });
   }
 

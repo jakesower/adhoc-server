@@ -6,7 +6,8 @@ var port = 3001;
 var webSocketPort = 8324;
 
 var WebSocketServer = require('ws').Server;
-var wss = require('./servers/websocket')({ port: webSocketPort });
+var server = require('./servers/webrtc');
+var wss = server({ port: webSocketPort });
 
 app.use( function( req, res, next ) {
   res.header( "Access-Control-Allow-Origin", "*" );
@@ -18,6 +19,10 @@ app.get( '/widgets.json', function( req, res, next ) {
   res.sendFile(__dirname + '/widgets.json')
 });
 
+app.get( '/bootstrapper.js', function( req, res, next ) {
+  res.sendFile(__dirname + '/bootstrapper.js')
+});
+
 app.get( '/widgets/:widget(*)', function( req, res, next ) {
   var file = req.params.widget;
   var path = fs.realpathSync( __dirname + '/widgets/' + file );
@@ -25,9 +30,17 @@ app.get( '/widgets/:widget(*)', function( req, res, next ) {
   res.sendFile( path );
 });
 
+app.get( '/clients/:client(*)', function( req, res, next ) {
+  var file = req.params.client;
+  var path = fs.realpathSync( __dirname + '/clients/' + file );
+
+  res.sendFile( path );
+});
+
 app.get( '*', function( req, res, next ) {
-  res.sendFile( fs.realpathSync( __dirname + '/websocket-client.html' ));
+  res.sendFile( fs.realpathSync( __dirname + '/index.html' ));
 })
 
 app.listen( port );
-console.log('listening on port ' + port);
+console.log('http listening on port ' + port);
+console.log('ws listening on port ' + webSocketPort);

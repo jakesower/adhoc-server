@@ -34,18 +34,19 @@ function createInitiator( id, connection ) {
   const peerConnection = createPeerConnection( connection );
   const dataChannel = peerConnection.createDataChannel(
     'channel' + id, { reliable: false });
-  const queueChannel = createQueueChannel();
+  const queueChannel = createQueue();
 
   let channel = {
     send: queueChannel.send,
     signal: createSignalHandler({
       iceCandidate: rtc.handleIceCandidate,
-      answer: s => rtc.handleAnswer( connection.signal, peerConnection, s ),
+      answer: s => rtc.handleAnswer( peerConnection, s ),
+      close: () => peerConnection.close()
     })
   }
 
   // send the offer
-  rtc.createOffer( connection.signal, peerConnection );
+  rtc.createOffer( connection.rtcsignal, peerConnection );
 
   // handle activation once the offer cycle completes
   dataChannel.onopen = function() {
@@ -65,13 +66,14 @@ function createInitiator( id, connection ) {
 
 function createReceiver( id, connection ) {
   const peerConnection = new createPeerConnection( connection );
-  const queueChannel = createQueueChannel( signalHandlers );
+  const queueChannel = createQueue();
 
   let channel = {
     send: queueChannel.send,
     signal: createSignalHandler({
       iceCandidate: rtc.handleIceCandidate,
-      offer: s => rtc.handleOffer( connection.signal, peerConnection, s ),
+      offer: s => rtc.handleOffer( connection.rtcsignal, peerConnection, s ),
+      close: () => peerConnection.close()
     })
   }
 
@@ -97,15 +99,15 @@ function createDataConnection( id, connection, dataChannel ) {
 
 
 function createPeerConnection( connection ) {
-  const pc = new RTCPeerConnection( config.rtcConfig );
+  let pc = new RTCPeerConnection( config.rtcConfig );
 
   // ICE handlers
   pc.onicecandidate = function( event ) {
     if( event.candidate ) {
       connection.signal(
-        'iceCandidate'
+        'iceCandidate',
         { iceCandidate: event.candidate }
-      })
+      );
     }
   }
 

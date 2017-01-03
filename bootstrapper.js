@@ -22,7 +22,6 @@
   var config = {
     widgetCatalog: "http://localhost:3001/widgets.json",
     widgetPath: "http://localhost:3001",
-    wsPath: "ws://localhost:8324",
     domRoot: document.querySelector( 'main' )
   }
 
@@ -40,17 +39,16 @@
 
 
   function connectToRoom( room ) {
-    var connection;
+    let connection = createConnection( room, "join" );
 
-    var signalHandler = function( signal ) {
-      if( signal.signal === 'manifest' && signal.manifest.widgetPath ) {
-        loadWidget( signal.manifest.widgetPath );
-        connection.removeSignalHandler( signalHandler );
+    connection.onsignal = function( signal, data ) {
+      if( signal === 'manifest' && data.manifest.widgetPath ) {
+        connection.onsignal = function() {};
+        loadWidget( signal.manifest.widgetPath, function() {
+          window.adhoc.widget( connection, config.domRoot );
+        });
       }
     }
-
-    connection = createConnection( room, "join" );
-    connection.addSignalHandler( signalHandler );
   }
 
 
@@ -63,7 +61,7 @@
 
       var newNode = document.importNode( template, true );
 
-      Object.keys(parts).forEach( function( k ) {
+      Object.keys( parts ).forEach( function( k ) {
         var n = newNode.querySelector( '.' + k );
         if( n ) { n.textContent = parts[ k ]; }
       });

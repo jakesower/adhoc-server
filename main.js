@@ -32,7 +32,7 @@ app.get( '/widgets/:widget(*)', function( req, res, next ) {
 
 app.get( '/clients/:client(*)', function( req, res, next ) {
   var file = req.params.client;
-  var path = fs.realpathSync( __dirname + '/clients/' + file );
+  var path = fs.realpathSync( __dirname + '/dist/clients/' + file );
 
   res.sendFile( path );
 });

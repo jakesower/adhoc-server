@@ -1,4 +1,6 @@
-module.exports = function( handlers, catchall ) {
+module.exports = function( handlers, uCatchall ) {
+  const catchall = uCatchall || (s => console.warn( s ));
+
   return ( signal, sData ) =>
     handlers[ signal ] ?
       handlers[ signal ]( sData ) :

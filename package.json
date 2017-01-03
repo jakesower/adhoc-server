@@ -5,8 +5,17 @@
   "main": "main.js",
   "author": "Jake Sower",
   "license": "MIT",
+  "scripts": {
+    "build": "browserify ./src/clients/webrtc.js -o dist/clients/webrtc.js",
+    "watch": "watchify ./src/clients/webrtc.js -o dist/clients/webrtc.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
     "express": "^4.14.0",
     "ws": "^1.1.1"
+  },
+  "devDependencies": {
+    "browserify": "^13.1.1",
+    "watchify": "^3.8.0"
   }
 }

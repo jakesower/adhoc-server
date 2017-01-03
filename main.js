@@ -6,7 +6,7 @@ var port = 3001;
 var webSocketPort = 8324;
 
 var WebSocketServer = require('ws').Server;
-var server = require('./servers/webrtc');
+var server = require('./src/servers/webrtc');
 var wss = server({ port: webSocketPort });
 
 app.use( function( req, res, next ) {

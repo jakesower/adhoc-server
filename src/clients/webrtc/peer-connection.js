@@ -92,8 +92,8 @@ function createDataConnection( id, connection, dataChannel ) {
   dataChannel.onmessage = connection.send;
 
   return {
-    send: dataChannel.send,
-    signal: function() { }
+    send: (s) => { console.log(s); dataChannel.send(s) },
+    signal: function() { console.log(arguments) }
   }
 }
 

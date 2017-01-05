@@ -72,18 +72,15 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
         peerConnections[ id ] = createInitiator( id, peerInterface( id ));
       }),
 
-    // A single peer has connected, create a connection, but do not initiatte.
+    // A single peer has connected, create a connection, but do not initiate.
     peerConnected: ({ id }) => {
       if( !peerConnections[ id ] ) {
-        peerConnections[ id ] = createReceiver(
-          id,
-          peerInterface( id ));
+        peerConnections[ id ] = createReceiver( id, peerInterface( id ));
       }
     },
 
     // Peer disconnected. Close and remove the connection.
     peerDisconnected: ({ id }) => {
-      console.log( peerConnections )
       peerConnections[ id ].signal( 'close' );
       delete peerConnections[ id ];
     }},
@@ -91,14 +88,13 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
     // Catchall signal handler
     ( signal, data ) => {
       // A targeted signal was received, forward it.
-      if( data.from ) {
-        if( !peerConnections[ data.from ] ) {
+      if( 'from' in data ) {
+        if( !peerConnections[ data.from ]) {
           peerConnections[ data.from ] = createReceiver(
             data.from,
             peerInterface( id ));
         }
 
-        console.log( data );
         peerConnections[ data.from ].signal( signal, data );
       }
 

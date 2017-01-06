@@ -19,7 +19,7 @@ function handleAnswer( peerConnection, { answer }) {
   peerConnection.setRemoteDescription( new RTCSessionDescription( answer ));
 }
 
-function handleIceCandidate({ iceCandidate }) {
+function handleIceCandidate( peerConnection, { iceCandidate }) {
   peerConnection.addIceCandidate( new RTCIceCandidate( iceCandidate ));
 }
 

@@ -17,7 +17,6 @@ const config = {
   }
 }
 
-var createSignalHandler = require('./signal-handler');
 var rtc = require('./rtc');
 
 /**
@@ -40,25 +39,32 @@ module.exports = {
 */
 function createInitiator( id, connection ) {
   const peerConnection = createPeerConnection( connection );
+  const opts = { reliable: false };
 
-  const dataChannel = createDataChannel( id, peerConnection, false );
-  const signalChannel = createDataChannel( id, peerConnection, true );
+  const queues = { messages: createQueue(), signals: createQueue() };
+  const channels = {
+    messages: peerConnection.createDataChannel( 'messages', opts ),
+    signals: peerConnection.createDataChannel( 'signals', opts )
+  }
 
   let interface = {
-    // Actual connection interface
-    send: dataChannel.send,
-    signal: signalChannel.send,
+    send: queues.messages.send,
+    signal: queues.signals.send,
     onmessage: () => {},
     onsignal: () => {},
 
     rtcHandlers: {
-      iceCandidate: rtc.handleIceCandidate,
+      iceCandidate: s => rtc.handleIceCandidate( peerConnection, s ),
       answer: s => rtc.handleAnswer( peerConnection, s ),
       close: () => peerConnection.close()
     }
-  }
+  };
 
-  rtc.createOffer( connection.rtcsignal, connection );
+  Object.keys( channels ).forEach( c =>
+    channels[ c ].onopen = () =>
+      actualizeChannel( channels[ c ], interface, queues.messages));
+
+  rtc.createOffer( connection.rtcsignal, peerConnection );
 
   return interface;
 }
@@ -71,54 +77,67 @@ function createInitiator( id, connection ) {
 */
 
 function createReceiver( id, connection ) {
-  const peerConnection = new createPeerConnection( connection );
-
-  let queues = {
-    messages: createQueue(),
-    signals: createQueue()
-  };
+  const peerConnection = createPeerConnection( connection );
+  const queues = { messages: createQueue(), signals: createQueue() };
 
   let interface = {
-    send: dataChannel.send,
-    signal: signalChannel.send,
+    send: queues.messages.send,
+    signal: queues.signals.send,
     onmessage: () => {},
     onsignal: () => {},
 
     rtcHandlers: {
-      iceCandidate: rtc.handleIceCandidate,
+      iceCandidate: s => rtc.handleIceCandidate( peerConnection, s ),
       offer: s => rtc.handleOffer( connection.rtcsignal, peerConnection, s ),
       close: () => peerConnection.close()
     }
+  };
+
+  peerConnection.ondatachannel = ev => {
+    actualizeChannel( ev.channel, interface, queues[ ev.channel.label ]);
   }
 
-  peerConnection.ondatachannel = function( e ) {
-    // 1. detect if signal or message channel
-    // 2. drain queued messages
-    // 3. remove queue interface
+  return interface;
+}
 
-    // if( ev.channel.label === 'signal' ) {
-    //
-    // }
-    // const dc = createDataConnection( id, connection, dataChannel );
-    // channel.send = dc.send;
-    // channel.signal = dc.signal;
-    //
-    // channel.signal( 'manifest', connection.manfiest );
-    // queueChannel.drain( channel.send );
+// Helpers
+
+function actualizeChannel( channel, interface, queue ) {
+  if( channel.label === 'messages' ) {
+    interface.send = message => {
+      console.log( 'sending message' );
+      // console.log( message );
+      channel.send( message );
+    }
+    channel.onmessage = message => {
+      console.log( 'got message' )
+      // console.log( message.data )
+      interface.onmessage( message );
+    }
+    queue.drain( interface.send );
   }
-
-  return channel;
+  else {
+    interface.signal = ( signal, data ) => {
+      channel.send( JSON.stringify( [ signal, data ]));
+    }
+    channel.onmessage = message => {
+      const data = JSON.parse( message.data );
+      console.log( 'got signal' )
+      console.log( data )
+      interface.onsignal( data[0], data[1] )
+    };
+    queue.drain( interface.signal );
+  }
 }
 
 
-// Helpers
 function createPeerConnection( connection ) {
   let pc = new RTCPeerConnection( config.rtcConfig );
 
   // ICE handlers
   pc.onicecandidate = function( event ) {
     if( event.candidate ) {
-      connection.signal(
+      connection.rtcsignal(
         'iceCandidate',
         { iceCandidate: event.candidate }
       );
@@ -129,14 +148,17 @@ function createPeerConnection( connection ) {
 }
 
 
+// hold on to arguments until a function to call is sent
 function createQueue() {
   let queue = [];
 
   return {
-    send: msg => queue.push( msg ),
-    drain: function( channel ) {
-      queue.forEach( message => channel.send( message ));
-      queue = [];
+    send: function() {
+      queue.push( Array.from( arguments ))
+    },
+    drain: function( drainFunc ) {
+      queue.forEach( args => drainFunc.apply( null, args ));
+      calls = [];
     }
   }
 }

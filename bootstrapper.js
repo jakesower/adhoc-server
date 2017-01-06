@@ -28,7 +28,6 @@
   // to be defined elsewhere before this file is executed
   var createConnection = window.adhoc.createConnection;
 
-
   function adhocInit() {
     var room = roomFromURI();
 
@@ -40,11 +39,11 @@
 
   function connectToRoom( room ) {
     let connection = createConnection( room, "join" );
-
     connection.onsignal = function( signal, data ) {
-      if( signal === 'manifest' && data.manifest.widgetPath ) {
+      if( signal === 'manifest' && data.widgetPath ) {
         connection.onsignal = function() {};
-        loadWidget( signal.manifest.widgetPath, function() {
+        connection.manifest.widgetPath = data.widgetPath;
+        loadWidget( data.widgetPath, function() {
           window.adhoc.widget( connection, config.domRoot );
         });
       }

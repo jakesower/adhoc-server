@@ -41,27 +41,23 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
     send: ( data ) => {},           // defined later in function
     signal: ( signal, data ) => {}, // defined later in function
     onmessage: ( func ) => {},      // to be set externally
-    onsignal: ( func ) => {}        // to be set externally
+    onsignal: ( func ) => {},       // to be set externally
+
+    manifest
   };
 
   // Helper for providing a minimal interface to peer connections
   const peerInterface = ( peerID ) => ({
-    // channel for handling widget data -- pipe it through
-    send: interface.onmessage,
-
     // channel to communicate with the webrtc signaler
     rtcsignal: ( s, m ) => rtcSignaler.send( JSON.stringify(
       Object.assign( m, { to: peerID, type: s }))),
-
-    // channel for internal signals
-    signal: ( s, d ) =>
-      interface.onsignal( s, Object.assign( {}, d, { peerID: peerID }))
   });
 
   // Fan out incoming message across each peer connection
-  interface.send = ( message ) => Object.keys( peerConnections ).forEach( k =>
+  interface.send = ( message ) => Object.keys( peerConnections ).forEach( k => {
+    console.log( 'send to ' + k )
     peerConnections[k].send( message )
-  );
+  });
 
   interface.signal = ( signal, data ) => {}; // maybe this will be useful later
 
@@ -71,12 +67,18 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
     peers: ({ peers }) =>
       peers.forEach( function( id ) {
         peerConnections[ id ] = createInitiator( id, peerInterface( id ));
+        peerConnections[ id ].signal( 'manifest', manifest );
+        peerConnections[ id ].onsignal = ( s, d ) => interface.onsignal( s, d );
+        peerConnections[ id ].onmessage = m => interface.onmessage( m );
       }),
 
     // A single peer has connected, create a connection, but do not initiate.
     peerConnected: ({ id }) => {
       if( !peerConnections[ id ] ) {
         peerConnections[ id ] = createReceiver( id, peerInterface( id ));
+        peerConnections[ id ].signal( 'manifest', manifest );
+        peerConnections[ id ].onsignal = ( s, d ) => interface.onsignal( s, d );
+        peerConnections[ id ].onmessage = m => interface.onmessage( m );
       }
     },
 
@@ -88,16 +90,17 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
 
     // Catchall signal handler
     ( signal, data ) => {
-      // A targeted signal was received, forward it.
+      // A targeted signal was received. Have the connection handle it.
       if( 'from' in data ) {
-        if( !peerConnections[ data.from ]) {
-          peerConnections[ data.from ] = createReceiver(
-            data.from,
-            peerInterface( id ));
+        let pc = peerConnections[ data.from ];
+        if( !pc ) {
+          pc = createReceiver( data.from, peerInterface( id ));
+          pc.signal( 'manifest', manifest );
+          pc.onsignal = ( s, d ) => interface.onsignal( s, d );
+          peerConnections[ data.from ] = pc;
         }
 
-        // yikes :(
-        peerConnections[ data.from ].rtcHandlers[ data.type ]( data );
+        pc.rtcHandlers[ signal ]( data );
       }
 
       else {

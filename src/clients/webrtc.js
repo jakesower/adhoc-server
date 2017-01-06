@@ -35,6 +35,7 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
     ( config.signalerPath + '/' + room ) : config.signalerPath;
   const rtcSignaler = new WebSocket( uri );
 
+  let manifest = initManifest || {};
   let peerConnections = {};
   let interface = {
     send: ( data ) => {},           // defined later in function
@@ -95,7 +96,8 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
             peerInterface( id ));
         }
 
-        peerConnections[ data.from ].signal( signal, data );
+        // yikes :(
+        peerConnections[ data.from ].rtcHandlers[ data.type ]( data );
       }
 
       else {

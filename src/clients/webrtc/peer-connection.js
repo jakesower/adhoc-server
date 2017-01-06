@@ -1,6 +1,14 @@
 // Config
 var RTCPeerConnection = RTCPeerConnection || webkitRTCPeerConnection || mozRTCPeerConnection;
 
+/**
+  NOTE TO SELF:
+
+  - Look for ways of handling queues before and after the channel is known and available.
+  - Keep this separated from the signal/message handling functions
+  - It may be best to compose a couple of functions here
+*/
+
 const config = {
   rtcConfig: {
     iceServers: [
@@ -32,29 +40,27 @@ module.exports = {
 */
 function createInitiator( id, connection ) {
   const peerConnection = createPeerConnection( connection );
-  const dataChannel = peerConnection.createDataChannel(
-    'channel' + id, { reliable: false });
-  const queueChannel = createQueue();
 
-  let channel = {
-    send: queueChannel.send,
-    signal: createSignalHandler({
+  const dataChannel = createDataChannel( id, peerConnection, false );
+  const signalChannel = createDataChannel( id, peerConnection, true );
+
+  let interface = {
+    // Actual connection interface
+    send: dataChannel.send,
+    signal: signalChannel.send,
+    onmessage: () => {},
+    onsignal: () => {},
+
+    rtcHandlers: {
       iceCandidate: rtc.handleIceCandidate,
       answer: s => rtc.handleAnswer( peerConnection, s ),
       close: () => peerConnection.close()
-    })
+    }
   }
 
-  // send the offer
-  rtc.createOffer( connection.rtcsignal, peerConnection );
+  rtc.createOffer( connection.rtcsignal, connection );
 
-  // handle activation once the offer cycle completes
-  dataChannel.onopen = function() {
-    channel.send = createDataConnection( id, connection, dataChannel );
-    queueChannel.drain( channel.send );
-  }
-
-  return channel;
+  return interface;
 }
 
 /**
@@ -66,20 +72,39 @@ function createInitiator( id, connection ) {
 
 function createReceiver( id, connection ) {
   const peerConnection = new createPeerConnection( connection );
-  const queueChannel = createQueue();
 
-  let channel = {
-    send: queueChannel.send,
-    signal: createSignalHandler({
+  let queues = {
+    messages: createQueue(),
+    signals: createQueue()
+  };
+
+  let interface = {
+    send: dataChannel.send,
+    signal: signalChannel.send,
+    onmessage: () => {},
+    onsignal: () => {},
+
+    rtcHandlers: {
       iceCandidate: rtc.handleIceCandidate,
       offer: s => rtc.handleOffer( connection.rtcsignal, peerConnection, s ),
       close: () => peerConnection.close()
-    })
+    }
   }
 
   peerConnection.ondatachannel = function( e ) {
-    channel.send = createDataConnection( id, connection, e.channel );
-    queueChannel.drain( channel.send );
+    // 1. detect if signal or message channel
+    // 2. drain queued messages
+    // 3. remove queue interface
+
+    // if( ev.channel.label === 'signal' ) {
+    //
+    // }
+    // const dc = createDataConnection( id, connection, dataChannel );
+    // channel.send = dc.send;
+    // channel.signal = dc.signal;
+    //
+    // channel.signal( 'manifest', connection.manfiest );
+    // queueChannel.drain( channel.send );
   }
 
   return channel;
@@ -87,17 +112,6 @@ function createReceiver( id, connection ) {
 
 
 // Helpers
-
-function createDataConnection( id, connection, dataChannel ) {
-  dataChannel.onmessage = connection.send;
-
-  return {
-    send: (s) => { console.log(s); dataChannel.send(s) },
-    signal: function() { console.log(arguments) }
-  }
-}
-
-
 function createPeerConnection( connection ) {
   let pc = new RTCPeerConnection( config.rtcConfig );
 

@@ -55,7 +55,7 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
 
   // Fan out incoming message across each peer connection
   interface.send = ( message ) => Object.keys( peerConnections ).forEach( k => {
-    console.log( 'send to ' + k )
+    // console.log( 'send to ' + k )
     peerConnections[k].send( message )
   });
 

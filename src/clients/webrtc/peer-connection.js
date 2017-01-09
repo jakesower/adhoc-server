@@ -105,12 +105,12 @@ function createReceiver( id, connection ) {
 function actualizeChannel( channel, interface, queue ) {
   if( channel.label === 'messages' ) {
     interface.send = message => {
-      console.log( 'sending message' );
+      // console.log( 'sending message' );
       // console.log( message );
       channel.send( message );
     }
     channel.onmessage = message => {
-      console.log( 'got message' )
+      // console.log( 'got message' )
       // console.log( message.data )
       interface.onmessage( message );
     }

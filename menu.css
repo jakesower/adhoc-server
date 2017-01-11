@@ -1,0 +1,15 @@
+body {
+  padding: 0;
+  margin: 0;
+}
+
+.adhoc-widget-menu {
+  padding: 1px 15px;
+  background-color: #eee;
+  font-family: sans-serif;
+  min-height: 100%;
+}
+
+.adhoc-widget-menu ul {
+  
+}

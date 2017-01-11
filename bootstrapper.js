@@ -98,7 +98,7 @@
           );
         });
 
-        document.querySelector( 'body > main' ).appendChild( widgetList );
+        document.querySelector( '.adhoc-widget-menu' ).appendChild( widgetList );
       })
   }
 

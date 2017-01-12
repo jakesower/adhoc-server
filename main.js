@@ -19,6 +19,10 @@ app.get( '/widgets.json', function( req, res, next ) {
   res.sendFile(__dirname + '/widgets.json')
 });
 
+app.get( '/menu.css', function( req, res, next ) {
+  res.sendFile(__dirname + '/menu.css')
+});
+
 app.get( '/bootstrapper.js', function( req, res, next ) {
   res.sendFile(__dirname + '/bootstrapper.js')
 });

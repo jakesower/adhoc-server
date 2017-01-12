@@ -1,14 +1,6 @@
 // Config
 var RTCPeerConnection = RTCPeerConnection || webkitRTCPeerConnection || mozRTCPeerConnection;
 
-/**
-  NOTE TO SELF:
-
-  - Look for ways of handling queues before and after the channel is known and available.
-  - Keep this separated from the signal/message handling functions
-  - It may be best to compose a couple of functions here
-*/
-
 const config = {
   rtcConfig: {
     iceServers: [
@@ -122,8 +114,6 @@ function actualizeChannel( channel, interface, queue ) {
     }
     channel.onmessage = message => {
       const data = JSON.parse( message.data );
-      console.log( 'got signal' )
-      console.log( data )
       interface.onsignal( data[0], data[1] )
     };
     queue.drain( interface.signal );

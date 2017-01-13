@@ -15,9 +15,9 @@
   - A sends ICE candidate to B via server
 */
 
-module.exports = function({ port }) {
+module.exports = function( server ) {
   var WebSocketServer = require('ws').Server;
-  var wss = new WebSocketServer({ port: port });
+  var wss = new WebSocketServer({ server: server });
 
   var channels = {};
   var awaitingConnection = [];

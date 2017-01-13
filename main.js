@@ -1,13 +1,14 @@
+var server = require('http').createServer();
 var express = require('express');
 var fs = require('fs');
 
 var app = express();
 
-var { port, websocketPort } = require('./config');
+var { port } = require('./config');
 
 var WebSocketServer = require('ws').Server;
-var server = require('./src/servers/webrtc');
-var wss = server({ port: websocketPort });
+var signalServer = require('./src/servers/webrtc');
+var wss = signalServer( server );
 
 app.use( function( req, res, next ) {
   res.header( "Access-Control-Allow-Origin", "*" );
@@ -45,6 +46,5 @@ app.get( '*', function( req, res, next ) {
   res.sendFile( fs.realpathSync( __dirname + '/index.html' ));
 })
 
-app.listen( port );
-console.log('http listening on port ' + port);
-console.log('ws listening on port ' + websocketPort);
+server.on( 'request', app );
+server.listen( port, () => console.log('http listening on port ' + port) );

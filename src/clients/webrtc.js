@@ -1,10 +1,7 @@
 var createInitiator = require('./webrtc/peer-connection').createInitiator;
 var createReceiver = require('./webrtc/peer-connection').createReceiver;
 var createSignalHandler = require('./webrtc/signal-handler');
-
-const config = {
-  signalerPath: "ws://localhost:8324"
-}
+var config = require('../../config');
 
 /**
   This is the interface for an adhoc client that uses WebRTC as its primary

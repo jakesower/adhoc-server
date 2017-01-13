@@ -10,7 +10,7 @@ window.adhoc.widget = function( connection, rootElement ) {
   var inProgress = {};
 
   connection.onmessage = function( message ) {
-    console.log( message );
+    // console.log( message );
     data = JSON.parse( message.data );
 
     if( !( data.id in inProgress )) inProgress[ data.id ] = [];
@@ -2264,7 +2264,7 @@ module.exports = Array.isArray || function (arr) {
     }
     return hex;
   };
-  
+
   if (COMMON_JS) {
     sha256.sha256 = sha256;
     sha256.sha224 = sha224;

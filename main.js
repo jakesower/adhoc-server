@@ -2,12 +2,12 @@ var express = require('express');
 var fs = require('fs');
 
 var app = express();
-var port = 3001;
-var webSocketPort = 8324;
+
+var { port, websocketPort } = require('./config');
 
 var WebSocketServer = require('ws').Server;
 var server = require('./src/servers/webrtc');
-var wss = server({ port: webSocketPort });
+var wss = server({ port: websocketPort });
 
 app.use( function( req, res, next ) {
   res.header( "Access-Control-Allow-Origin", "*" );
@@ -47,4 +47,4 @@ app.get( '*', function( req, res, next ) {
 
 app.listen( port );
 console.log('http listening on port ' + port);
-console.log('ws listening on port ' + webSocketPort);
+console.log('ws listening on port ' + websocketPort);

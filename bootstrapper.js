@@ -20,8 +20,8 @@
   window.adhoc = window.adhoc || {};
 
   var config = {
-    widgetCatalog: "http://localhost:3001/widgets.json",
-    widgetPath: "http://localhost:3001",
+    widgetCatalog: "/widgets.json",
+    widgetPath: "",
     domRoot: document.querySelector( 'main' )
   }
 

@@ -1,11 +1,15 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports = {
+  signalerPath: 'ws://localhost:8324',
+  port: 3001,
+  websocketPort: 8324
+}
+
+},{}],2:[function(require,module,exports){
 var createInitiator = require('./webrtc/peer-connection').createInitiator;
 var createReceiver = require('./webrtc/peer-connection').createReceiver;
 var createSignalHandler = require('./webrtc/signal-handler');
-
-const config = {
-  signalerPath: "ws://localhost:8324"
-}
+var config = require('../../config');
 
 /**
   This is the interface for an adhoc client that uses WebRTC as its primary
@@ -119,17 +123,9 @@ window.adhoc.createConnection = function( room, mode, initManifest ) {
   return interface;
 }
 
-},{"./webrtc/peer-connection":2,"./webrtc/signal-handler":4}],2:[function(require,module,exports){
+},{"../../config":1,"./webrtc/peer-connection":3,"./webrtc/signal-handler":5}],3:[function(require,module,exports){
 // Config
 var RTCPeerConnection = RTCPeerConnection || webkitRTCPeerConnection || mozRTCPeerConnection;
-
-/**
-  NOTE TO SELF:
-
-  - Look for ways of handling queues before and after the channel is known and available.
-  - Keep this separated from the signal/message handling functions
-  - It may be best to compose a couple of functions here
-*/
 
 const config = {
   rtcConfig: {
@@ -244,8 +240,6 @@ function actualizeChannel( channel, interface, queue ) {
     }
     channel.onmessage = message => {
       const data = JSON.parse( message.data );
-      console.log( 'got signal' )
-      console.log( data )
       interface.onsignal( data[0], data[1] )
     };
     queue.drain( interface.signal );
@@ -285,7 +279,7 @@ function createQueue() {
   }
 }
 
-},{"./rtc":3}],3:[function(require,module,exports){
+},{"./rtc":4}],4:[function(require,module,exports){
 /**
   Functions that handle RTC boilerplate. Arguments used throughout module:
 
@@ -325,7 +319,7 @@ module.exports = {
   createOffer
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = function( handlers, uCatchall ) {
   const catchall = uCatchall || (s => console.warn( s ));
 
@@ -335,4 +329,4 @@ module.exports = function( handlers, uCatchall ) {
       catchall( signal, sData );
 }
 
-},{}]},{},[1]);
+},{}]},{},[2]);

@@ -1,5 +1,11 @@
 window.adhoc.widget = function( connection, rootElement ) {
-  connection.onmessage = console.log;
+  rootElement.innerHTML = '<div id="debug"></div>';
 
-  rootElement.innerHTML = 'Oh hai';
+  appendDebug = function( m ) {
+    rootElement.appendChild('<div>' + m + '</div>')
+  }
+
+  connection.onmessage = appendDebug;
+  connection.onsignal = appendDebug;
+
 }

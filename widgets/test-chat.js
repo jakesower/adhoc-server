@@ -11,4 +11,5 @@ window.adhoc.widget = function( connection, rootElement ) {
   connection.send('moo');
   connection.signal('bock')
 
+  return connection;
 }

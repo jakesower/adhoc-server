@@ -8,4 +8,7 @@ window.adhoc.widget = function( connection, rootElement ) {
   connection.onmessage = appendDebug;
   connection.onsignal = appendDebug;
 
+  connection.send('moo');
+  connection.signal('bock')
+
 }

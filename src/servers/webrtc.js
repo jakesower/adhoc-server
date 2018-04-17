@@ -15,111 +15,111 @@
   - A sends ICE candidate to B via server
 */
 
-module.exports = function( server ) {
+module.exports = function (server) {
   var WebSocketServer = require('ws').Server;
   var wss = new WebSocketServer({ server: server });
 
   var channels = {};
   var awaitingConnection = [];
 
-  function addConnectionToChannel( connection, channelID ) {
-    if( !channels[ channelID ]) {
-      channels[ channelID ] = [];
+  function addConnectionToChannel(connection, channelID) {
+    if (!channels[channelID]) {
+      channels[channelID] = [];
     }
 
-    var channel = channels[ channelID ];
+    var channel = channels[channelID];
 
-    console.log( 'id ' + connection.id + ' connected to channel ' + channelID );
-    channel.push( connection );
+    console.log('id ' + connection.id + ' connected to channel ' + channelID);
+    channel.push(connection);
 
-    broadcastTo( channel, {
+    broadcastTo(channel, {
       type: 'peers',
-      peers: channel.filter( c => c.id !== connection.id ).map( c => c.id )
-    }, connection.id );
+      peers: channel.filter(c => c.id !== connection.id).map(c => c.id)
+    }, connection.id);
 
-    broadcastAll( channel, {
+    broadcastAll(channel, {
       type: 'peerConnected',
       id: connection.id
-    }, connection.id );
+    }, connection.id);
 
     return channel;
   }
 
-  function removeConnectionFromChannel( connection, channelID ) {
-    if( channels[ channelID ]) {
-      console.log( 'id ' + connection.id + ' disconnected from channel ' + channelID );
-      channels[ channelID ] = channels[ channelID ].filter( c => c !== connection );
+  function removeConnectionFromChannel(connection, channelID) {
+    if (channels[channelID]) {
+      console.log('id ' + connection.id + ' disconnected from channel ' + channelID);
+      channels[channelID] = channels[channelID].filter(c => c !== connection);
 
-      broadcastAll( channels[ channelID ], {
+      broadcastAll(channels[channelID], {
         type: 'peerDisconnected',
         id: connection.id
       });
 
-      if( channels[ channelID ].length === 0 ){
-        delete channels[ channelID ];
+      if (channels[channelID].length === 0) {
+        delete channels[channelID];
       }
     }
     else {
-      console.log( 'id ' + connection.id + ' TRIED disconnecting from channel ' + channelID );
+      console.log('id ' + connection.id + ' TRIED disconnecting from channel ' + channelID);
     }
   }
 
   var createConnection = (function () {
     let connID = -1;
 
-    return function( sock ) {
+    return function (sock) {
       connID = connID + 1;
 
       return {
         id: connID,
-        send: function( msg ) {
-          sock.send( JSON.stringify( msg ));
+        send: function (msg) {
+          sock.send(JSON.stringify(msg));
         }
       }
     }
   }());
 
-  wss.on( 'connection', function connection( ws ) {
-    var urlParts = ws.upgradeReq.url.split( '/' );
-    var channelID = urlParts[ urlParts.length - 1 ];
-    var connection = createConnection( ws );
+  wss.on('connection', function connection(ws) {
+    var urlParts = ws.upgradeReq.url.split('/');
+    var channelID = urlParts[urlParts.length - 1];
+    var connection = createConnection(ws);
 
     // will broadcast appropriate messages to channel
-    var channel = addConnectionToChannel( connection, channelID );
+    var channel = addConnectionToChannel(connection, channelID);
 
-    ws.on( 'message', function incoming( rawMessage ) {
-      var channel = channels[ channelID ];
+    ws.on('message', function incoming(rawMessage) {
+      var channel = channels[channelID];
 
       try {
-        var message = Object.assign( {},
-          JSON.parse( rawMessage ), { from: connection.id });
-        broadcastTo( channel, message, message.to );
+        var message = Object.assign({},
+          JSON.parse(rawMessage), { from: connection.id });
+        broadcastTo(channel, message, message.to);
 
-        console.log( message );
+        console.log(message);
       }
-      catch( err ) {
-        console.warn( "The message couldn't go through!" );
-        console.log( rawMessage );
-        console.log( err );
+      catch (err) {
+        console.warn("The message couldn't go through!");
+        console.log(rawMessage);
+        console.log(err);
       }
     });
 
-    ws.on( 'close', function closing() {
-      removeConnectionFromChannel( connection, channelID );
+    ws.on('close', function closing() {
+      removeConnectionFromChannel(connection, channelID);
     });
   });
 
-  function broadcastAll( channel, msg, exceptID = null ) {
-    channel.forEach( function( sock ) {
-      if( sock.id !== exceptID ) sock.send( msg );
+  function broadcastAll(channel, msg, exceptID = null) {
+    channel.forEach(function (sock) {
+      if (sock.id !== exceptID) sock.send(msg);
     });
   }
 
-  function broadcastTo( channel, msg, targetId ) {
-    var target = channel.find( sock => sock.id === targetId );
-    if( !target ) { throw( "No such channel with ID " + targetId ); }
+  function broadcastTo(channel, msg, targetId) {
+    var target = channel.find(sock => sock.id === targetId);
+    if (!target) { throw ("No such channel with ID " + targetId); }
 
-    target.send( msg );
+    target.send(msg);
   }
 
   return wss;

@@ -1,8 +1,8 @@
 // Fix Vendor Prefixes
 var IS_CHROME = !!window.webkitRTCPeerConnection,
-    RTCPeerConnection,
-    RTCIceCandidate,
-    RTCSessionDescription;
+  RTCPeerConnection,
+  RTCIceCandidate,
+  RTCSessionDescription;
 
 if (IS_CHROME) {
   RTCPeerConnection = webkitRTCPeerConnection;
@@ -20,11 +20,11 @@ function SignalingChannel(peerConnection) {
   this.peerConnection = peerConnection;
 }
 
-SignalingChannel.prototype.send = function(message) {
-    // Send messages using your favorite real-time network
+SignalingChannel.prototype.send = function (message) {
+  // Send messages using your favorite real-time network
 };
 
-SignalingChannel.prototype.onmessage = function(message) {
+SignalingChannel.prototype.onmessage = function (message) {
   // If we get a sdp we have to sign and return it
   if (message.sdp != null) {
     var that = this;

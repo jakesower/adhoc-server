@@ -7,27 +7,27 @@
 */
 
 
-function handleOffer( signal, peerConnection, { offer }) {
-  peerConnection.setRemoteDescription( new RTCSessionDescription( offer ));
-  peerConnection.createAnswer( function( answer ) {
-    peerConnection.setLocalDescription( answer );
-    signal( 'answer', { answer: answer });
-  }, function (err) { alert('something went wrong')});
+function handleOffer(signal, peerConnection, { offer }) {
+  peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+  peerConnection.createAnswer(function (answer) {
+    peerConnection.setLocalDescription(answer);
+    signal('answer', { answer: answer });
+  }, function (err) { alert('something went wrong') });
 }
 
-function handleAnswer( peerConnection, { answer }) {
-  peerConnection.setRemoteDescription( new RTCSessionDescription( answer ));
+function handleAnswer(peerConnection, { answer }) {
+  peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 }
 
-function handleIceCandidate( peerConnection, { iceCandidate }) {
-  peerConnection.addIceCandidate( new RTCIceCandidate( iceCandidate ));
+function handleIceCandidate(peerConnection, { iceCandidate }) {
+  peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
 }
 
-function createOffer( signal, peerConnection ) {
-  peerConnection.createOffer( function( offer ) {
-    signal( 'offer', { offer: offer });
-    peerConnection.setLocalDescription( offer );
-  }, function (err) { alert('something went wrong')});
+function createOffer(signal, peerConnection) {
+  peerConnection.createOffer(function (offer) {
+    signal('offer', { offer: offer });
+    peerConnection.setLocalDescription(offer);
+  }, function (err) { alert('something went wrong') });
 }
 
 module.exports = {

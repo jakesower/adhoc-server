@@ -27,89 +27,93 @@ var config = require('../../config');
 */
 
 window.adhoc = window.adhoc || {};
-window.adhoc.createConnection = function( room, mode, initManifest ) {
-  const uri = room ?
-    ( config.signalerPath + '/' + room ) : config.signalerPath;
-  const rtcSignaler = new WebSocket( uri );
+window.adhoc.createConnection = function (room, mode, initManifest) {
+  const protocol =
+    window.location.protocol === 'https:' ? 'wss://' : 'ws://' +
+    window.location.host +
+    window.location.pathname;
+  const uri = room ? (config.signalerPath + '/' + room) : config.signalerPath;
+  const rtcSignaler = new WebSocket(protocol + uri);
 
   let manifest = initManifest || {};
   let peerConnections = {};
   let interface = {
-    send: ( data ) => {},           // defined later in function
-    signal: ( signal, data ) => {}, // defined later in function
-    onmessage: ( func ) => {},      // to be set externally
-    onsignal: ( func ) => {},       // to be set externally
+    send: (data) => { },           // defined later in function
+    signal: (signal, data) => { }, // defined later in function
+    onmessage: (func) => { },      // to be set externally
+    onsignal: (func) => { },       // to be set externally
 
     manifest
   };
 
   // Helper for providing a minimal interface to peer connections
-  const peerInterface = ( peerID ) => ({
+  const peerInterface = (peerID) => ({
     // channel to communicate with the webrtc signaler
-    rtcsignal: ( s, m ) => rtcSignaler.send( JSON.stringify(
-      Object.assign( m, { to: peerID, type: s }))),
+    rtcsignal: (s, m) => rtcSignaler.send(JSON.stringify(
+      Object.assign(m, { to: peerID, type: s }))),
   });
 
   // Fan out incoming message across each peer connection
-  interface.send = ( message ) => Object.keys( peerConnections ).forEach( k => {
+  interface.send = (message) => Object.keys(peerConnections).forEach(k => {
     // console.log( 'send to ' + k )
-    peerConnections[k].send( message )
+    peerConnections[k].send(message)
   });
 
-  interface.signal = ( signal, data ) => {}; // maybe this will be useful later
+  interface.signal = (signal, data) => { }; // maybe this will be useful later
 
 
   const rtcSignalHandler = createSignalHandler({
     // A full list of peers has been received--initiate connections with all.
     peers: ({ peers }) =>
-      peers.forEach( function( id ) {
-        peerConnections[ id ] = createInitiator( id, peerInterface( id ));
-        peerConnections[ id ].signal( 'manifest', manifest );
-        peerConnections[ id ].onsignal = ( s, d ) => interface.onsignal( s, d );
-        peerConnections[ id ].onmessage = m => interface.onmessage( m );
+      peers.forEach(function (id) {
+        peerConnections[id] = createInitiator(id, peerInterface(id));
+        peerConnections[id].signal('manifest', manifest);
+        peerConnections[id].onsignal = (s, d) => interface.onsignal(s, d);
+        peerConnections[id].onmessage = m => interface.onmessage(m);
       }),
 
     // A single peer has connected, create a connection, but do not initiate.
     peerConnected: ({ id }) => {
-      if( !peerConnections[ id ] ) {
-        peerConnections[ id ] = createReceiver( id, peerInterface( id ));
-        peerConnections[ id ].signal( 'manifest', manifest );
-        peerConnections[ id ].onsignal = ( s, d ) => interface.onsignal( s, d );
-        peerConnections[ id ].onmessage = m => interface.onmessage( m );
+      if (!peerConnections[id]) {
+        peerConnections[id] = createReceiver(id, peerInterface(id));
+        peerConnections[id].signal('manifest', manifest);
+        peerConnections[id].onsignal = (s, d) => interface.onsignal(s, d);
+        peerConnections[id].onmessage = m => interface.onmessage(m);
       }
     },
 
     // Peer disconnected. Close and remove the connection.
     peerDisconnected: ({ id }) => {
-      peerConnections[ id ].signal( 'close' );
-      delete peerConnections[ id ];
-    }},
+      peerConnections[id].signal('close');
+      delete peerConnections[id];
+    }
+  },
 
     // Catchall signal handler
-    ( signal, data ) => {
+    (signal, data) => {
       // A targeted signal was received. Have the connection handle it.
-      if( 'from' in data ) {
-        let pc = peerConnections[ data.from ];
-        if( !pc ) {
-          pc = createReceiver( data.from, peerInterface( id ));
-          pc.signal( 'manifest', manifest );
-          pc.onsignal = ( s, d ) => interface.onsignal( s, d );
-          peerConnections[ data.from ] = pc;
+      if ('from' in data) {
+        let pc = peerConnections[data.from];
+        if (!pc) {
+          pc = createReceiver(data.from, peerInterface(id));
+          pc.signal('manifest', manifest);
+          pc.onsignal = (s, d) => interface.onsignal(s, d);
+          peerConnections[data.from] = pc;
         }
 
-        pc.rtcHandlers[ signal ]( data );
+        pc.rtcHandlers[signal](data);
       }
 
       else {
-        console.warn( "Unrecognized message received:" );
+        console.warn("Unrecognized message received:");
         console.warn({ signal: signal, data: data });
       }
     }
   ); // End signal handler
 
-  rtcSignaler.onmessage = function( message ) {
-    var data = JSON.parse( message.data );
-    rtcSignalHandler( data.type, data );
+  rtcSignaler.onmessage = function (message) {
+    var data = JSON.parse(message.data);
+    rtcSignalHandler(data.type, data);
   }
 
   return interface;

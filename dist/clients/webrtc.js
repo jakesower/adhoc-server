@@ -1,9 +1,8 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports = {
-  signalerPath: 'ws://localhost:3001',
   port: 3001,
-  websocketPort: 3001
-}
+  signalerPath: '',
+};
 
 },{}],2:[function(require,module,exports){
 var createInitiator = require('./webrtc/peer-connection').createInitiator;
@@ -35,89 +34,93 @@ var config = require('../../config');
 */
 
 window.adhoc = window.adhoc || {};
-window.adhoc.createConnection = function( room, mode, initManifest ) {
-  const uri = room ?
-    ( config.signalerPath + '/' + room ) : config.signalerPath;
-  const rtcSignaler = new WebSocket( uri );
+window.adhoc.createConnection = function (room, mode, initManifest) {
+  const protocol =
+    window.location.protocol === 'https:' ? 'wss://' : 'ws://' +
+    window.location.host +
+    window.location.pathname;
+  const uri = room ? (config.signalerPath + '/' + room) : config.signalerPath;
+  const rtcSignaler = new WebSocket(protocol + uri);
 
   let manifest = initManifest || {};
   let peerConnections = {};
   let interface = {
-    send: ( data ) => {},           // defined later in function
-    signal: ( signal, data ) => {}, // defined later in function
-    onmessage: ( func ) => {},      // to be set externally
-    onsignal: ( func ) => {},       // to be set externally
+    send: (data) => { },           // defined later in function
+    signal: (signal, data) => { }, // defined later in function
+    onmessage: (func) => { },      // to be set externally
+    onsignal: (func) => { },       // to be set externally
 
     manifest
   };
 
   // Helper for providing a minimal interface to peer connections
-  const peerInterface = ( peerID ) => ({
+  const peerInterface = (peerID) => ({
     // channel to communicate with the webrtc signaler
-    rtcsignal: ( s, m ) => rtcSignaler.send( JSON.stringify(
-      Object.assign( m, { to: peerID, type: s }))),
+    rtcsignal: (s, m) => rtcSignaler.send(JSON.stringify(
+      Object.assign(m, { to: peerID, type: s }))),
   });
 
   // Fan out incoming message across each peer connection
-  interface.send = ( message ) => Object.keys( peerConnections ).forEach( k => {
+  interface.send = (message) => Object.keys(peerConnections).forEach(k => {
     // console.log( 'send to ' + k )
-    peerConnections[k].send( message )
+    peerConnections[k].send(message)
   });
 
-  interface.signal = ( signal, data ) => {}; // maybe this will be useful later
+  interface.signal = (signal, data) => { }; // maybe this will be useful later
 
 
   const rtcSignalHandler = createSignalHandler({
     // A full list of peers has been received--initiate connections with all.
     peers: ({ peers }) =>
-      peers.forEach( function( id ) {
-        peerConnections[ id ] = createInitiator( id, peerInterface( id ));
-        peerConnections[ id ].signal( 'manifest', manifest );
-        peerConnections[ id ].onsignal = ( s, d ) => interface.onsignal( s, d );
-        peerConnections[ id ].onmessage = m => interface.onmessage( m );
+      peers.forEach(function (id) {
+        peerConnections[id] = createInitiator(id, peerInterface(id));
+        peerConnections[id].signal('manifest', manifest);
+        peerConnections[id].onsignal = (s, d) => interface.onsignal(s, d);
+        peerConnections[id].onmessage = m => interface.onmessage(m);
       }),
 
     // A single peer has connected, create a connection, but do not initiate.
     peerConnected: ({ id }) => {
-      if( !peerConnections[ id ] ) {
-        peerConnections[ id ] = createReceiver( id, peerInterface( id ));
-        peerConnections[ id ].signal( 'manifest', manifest );
-        peerConnections[ id ].onsignal = ( s, d ) => interface.onsignal( s, d );
-        peerConnections[ id ].onmessage = m => interface.onmessage( m );
+      if (!peerConnections[id]) {
+        peerConnections[id] = createReceiver(id, peerInterface(id));
+        peerConnections[id].signal('manifest', manifest);
+        peerConnections[id].onsignal = (s, d) => interface.onsignal(s, d);
+        peerConnections[id].onmessage = m => interface.onmessage(m);
       }
     },
 
     // Peer disconnected. Close and remove the connection.
     peerDisconnected: ({ id }) => {
-      peerConnections[ id ].signal( 'close' );
-      delete peerConnections[ id ];
-    }},
+      peerConnections[id].signal('close');
+      delete peerConnections[id];
+    }
+  },
 
     // Catchall signal handler
-    ( signal, data ) => {
+    (signal, data) => {
       // A targeted signal was received. Have the connection handle it.
-      if( 'from' in data ) {
-        let pc = peerConnections[ data.from ];
-        if( !pc ) {
-          pc = createReceiver( data.from, peerInterface( id ));
-          pc.signal( 'manifest', manifest );
-          pc.onsignal = ( s, d ) => interface.onsignal( s, d );
-          peerConnections[ data.from ] = pc;
+      if ('from' in data) {
+        let pc = peerConnections[data.from];
+        if (!pc) {
+          pc = createReceiver(data.from, peerInterface(id));
+          pc.signal('manifest', manifest);
+          pc.onsignal = (s, d) => interface.onsignal(s, d);
+          peerConnections[data.from] = pc;
         }
 
-        pc.rtcHandlers[ signal ]( data );
+        pc.rtcHandlers[signal](data);
       }
 
       else {
-        console.warn( "Unrecognized message received:" );
+        console.warn("Unrecognized message received:");
         console.warn({ signal: signal, data: data });
       }
     }
   ); // End signal handler
 
-  rtcSignaler.onmessage = function( message ) {
-    var data = JSON.parse( message.data );
-    rtcSignalHandler( data.type, data );
+  rtcSignaler.onmessage = function (message) {
+    var data = JSON.parse(message.data);
+    rtcSignalHandler(data.type, data);
   }
 
   return interface;
@@ -155,34 +158,34 @@ module.exports = {
   1. Send an offer
   2. Receive an answer
 */
-function createInitiator( id, connection ) {
-  const peerConnection = createPeerConnection( connection );
+function createInitiator(id, connection) {
+  const peerConnection = createPeerConnection(connection);
   const opts = { reliable: false };
 
   const queues = { messages: createQueue(), signals: createQueue() };
   const channels = {
-    messages: peerConnection.createDataChannel( 'messages', opts ),
-    signals: peerConnection.createDataChannel( 'signals', opts )
+    messages: peerConnection.createDataChannel('messages', opts),
+    signals: peerConnection.createDataChannel('signals', opts)
   }
 
   let interface = {
     send: queues.messages.send,
     signal: queues.signals.send,
-    onmessage: () => {},
-    onsignal: () => {},
+    onmessage: () => { },
+    onsignal: () => { },
 
     rtcHandlers: {
-      iceCandidate: s => rtc.handleIceCandidate( peerConnection, s ),
-      answer: s => rtc.handleAnswer( peerConnection, s ),
+      iceCandidate: s => rtc.handleIceCandidate(peerConnection, s),
+      answer: s => rtc.handleAnswer(peerConnection, s),
       close: () => peerConnection.close()
     }
   };
 
-  Object.keys( channels ).forEach( c =>
-    channels[ c ].onopen = () =>
-      actualizeChannel( channels[ c ], interface, queues.messages));
+  Object.keys(channels).forEach(c =>
+    channels[c].onopen = () =>
+      actualizeChannel(channels[c], interface, queues.messages));
 
-  rtc.createOffer( connection.rtcsignal, peerConnection );
+  rtc.createOffer(connection.rtcsignal, peerConnection);
 
   return interface;
 }
@@ -194,25 +197,25 @@ function createInitiator( id, connection ) {
   2. Send an answer
 */
 
-function createReceiver( id, connection ) {
-  const peerConnection = createPeerConnection( connection );
+function createReceiver(id, connection) {
+  const peerConnection = createPeerConnection(connection);
   const queues = { messages: createQueue(), signals: createQueue() };
 
   let interface = {
     send: queues.messages.send,
     signal: queues.signals.send,
-    onmessage: () => {},
-    onsignal: () => {},
+    onmessage: () => { },
+    onsignal: () => { },
 
     rtcHandlers: {
-      iceCandidate: s => rtc.handleIceCandidate( peerConnection, s ),
-      offer: s => rtc.handleOffer( connection.rtcsignal, peerConnection, s ),
+      iceCandidate: s => rtc.handleIceCandidate(peerConnection, s),
+      offer: s => rtc.handleOffer(connection.rtcsignal, peerConnection, s),
       close: () => peerConnection.close()
     }
   };
 
   peerConnection.ondatachannel = ev => {
-    actualizeChannel( ev.channel, interface, queues[ ev.channel.label ]);
+    actualizeChannel(ev.channel, interface, queues[ev.channel.label]);
   }
 
   return interface;
@@ -220,39 +223,39 @@ function createReceiver( id, connection ) {
 
 // Helpers
 
-function actualizeChannel( channel, interface, queue ) {
-  if( channel.label === 'messages' ) {
+function actualizeChannel(channel, interface, queue) {
+  if (channel.label === 'messages') {
     interface.send = message => {
       // console.log( 'sending message' );
       // console.log( message );
-      channel.send( message );
+      channel.send(message);
     }
     channel.onmessage = message => {
       // console.log( 'got message' )
       // console.log( message.data )
-      interface.onmessage( message );
+      interface.onmessage(message);
     }
-    queue.drain( interface.send );
+    queue.drain(interface.send);
   }
   else {
-    interface.signal = ( signal, data ) => {
-      channel.send( JSON.stringify( [ signal, data ]));
+    interface.signal = (signal, data) => {
+      channel.send(JSON.stringify([signal, data]));
     }
     channel.onmessage = message => {
-      const data = JSON.parse( message.data );
-      interface.onsignal( data[0], data[1] )
+      const data = JSON.parse(message.data);
+      interface.onsignal(data[0], data[1])
     };
-    queue.drain( interface.signal );
+    queue.drain(interface.signal);
   }
 }
 
 
-function createPeerConnection( connection ) {
-  let pc = new RTCPeerConnection( config.rtcConfig );
+function createPeerConnection(connection) {
+  let pc = new RTCPeerConnection(config.rtcConfig);
 
   // ICE handlers
-  pc.onicecandidate = function( event ) {
-    if( event.candidate ) {
+  pc.onicecandidate = function (event) {
+    if (event.candidate) {
       connection.rtcsignal(
         'iceCandidate',
         { iceCandidate: event.candidate }
@@ -269,11 +272,11 @@ function createQueue() {
   let queue = [];
 
   return {
-    send: function() {
-      queue.push( Array.from( arguments ))
+    send: function () {
+      queue.push(Array.from(arguments))
     },
-    drain: function( drainFunc ) {
-      queue.forEach( args => drainFunc.apply( null, args ));
+    drain: function (drainFunc) {
+      queue.forEach(args => drainFunc.apply(null, args));
       calls = [];
     }
   }
@@ -289,27 +292,27 @@ function createQueue() {
 */
 
 
-function handleOffer( signal, peerConnection, { offer }) {
-  peerConnection.setRemoteDescription( new RTCSessionDescription( offer ));
-  peerConnection.createAnswer( function( answer ) {
-    peerConnection.setLocalDescription( answer );
-    signal( 'answer', { answer: answer });
-  }, function (err) { alert('something went wrong')});
+function handleOffer(signal, peerConnection, { offer }) {
+  peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+  peerConnection.createAnswer(function (answer) {
+    peerConnection.setLocalDescription(answer);
+    signal('answer', { answer: answer });
+  }, function (err) { alert('something went wrong') });
 }
 
-function handleAnswer( peerConnection, { answer }) {
-  peerConnection.setRemoteDescription( new RTCSessionDescription( answer ));
+function handleAnswer(peerConnection, { answer }) {
+  peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 }
 
-function handleIceCandidate( peerConnection, { iceCandidate }) {
-  peerConnection.addIceCandidate( new RTCIceCandidate( iceCandidate ));
+function handleIceCandidate(peerConnection, { iceCandidate }) {
+  peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
 }
 
-function createOffer( signal, peerConnection ) {
-  peerConnection.createOffer( function( offer ) {
-    signal( 'offer', { offer: offer });
-    peerConnection.setLocalDescription( offer );
-  }, function (err) { alert('something went wrong')});
+function createOffer(signal, peerConnection) {
+  peerConnection.createOffer(function (offer) {
+    signal('offer', { offer: offer });
+    peerConnection.setLocalDescription(offer);
+  }, function (err) { alert('something went wrong') });
 }
 
 module.exports = {

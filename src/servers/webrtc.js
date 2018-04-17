@@ -15,8 +15,11 @@
   - A sends ICE candidate to B via server
 */
 
+const url = require('url');
+const ws = require('ws');
+
 module.exports = function (server) {
-  var WebSocketServer = require('ws').Server;
+  var WebSocketServer = ws.Server;
   var wss = new WebSocketServer({ server: server });
 
   var channels = {};
@@ -79,8 +82,8 @@ module.exports = function (server) {
     }
   }());
 
-  wss.on('connection', function connection(ws) {
-    var urlParts = ws.upgradeReq.url.split('/');
+  wss.on('connection', function connection(ws, req) {
+    var urlParts = url.parse(req.url).path.split('/');
     var channelID = urlParts[urlParts.length - 1];
     var connection = createConnection(ws);
 

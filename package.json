@@ -11,11 +11,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "express": "^4.14.0",
-    "ws": "^1.1.1"
+    "express": "^4.16.3",
+    "ws": "^5.1.1"
   },
   "devDependencies": {
-    "browserify": "^13.1.1",
-    "watchify": "^3.8.0"
+    "browserify": "^16.2.0",
+    "watchify": "^3.11.0"
   }
 }

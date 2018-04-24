@@ -4,7 +4,7 @@ var RTCPeerConnection = RTCPeerConnection || webkitRTCPeerConnection || mozRTCPe
 const config = {
   rtcConfig: {
     iceServers: [
-      { url: "stun:stun.1.google.com:19302" }
+      { url: "stun.ucsb.edu:3478" }
     ]
   }
 }

@@ -5,7 +5,7 @@ window.adhoc.widget = function (connection, rootElement) {
   `
 
   var debugDiv = document.querySelector('#debug');
-  var input = document.querySelector('#input ');
+  var input = document.querySelector('#input');
   var send = document.querySelector('#send');
 
   send.addEventListener('click', function (e) {
